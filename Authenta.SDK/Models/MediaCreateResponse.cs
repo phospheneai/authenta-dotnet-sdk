@@ -1,6 +1,10 @@
-public class MediaCreateResponse
+
+namespace Authenta.SDK.Models
 {
-    public string Mid { get; set; }
-    public string UploadUrl { get; set; }
-    public string Status { get; set; }
+    public class MediaCreateResponse
+    {
+        public string Mid { get; set; }
+        public string UploadUrl { get; set; }
+        public string Status { get; set; }
+    }
 }
