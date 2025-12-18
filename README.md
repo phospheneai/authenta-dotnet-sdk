@@ -21,10 +21,21 @@ Welcome to the official documentation for the **Authenta dotnet SDK**. This libr
 - .NET Framework 4.6.1+
 - .NET Core 2.0+
 - .NET 6+
+- .NET SDK 6.0 or later (for development & tooling)
+- Library target: **.NET Standard 2.0**
+- Supported OS: Windows, Linux, macOS
 
 ---
 
-## Installation
+## Build the SDK
+
+From the repository root:
+
+```bash
+cd Authenta.SDK
+dotnet restore
+dotnet build -c Release
+```
 
 ### NuGet (Recommended)
 
@@ -37,7 +48,7 @@ dotnet add package Authenta.SDK
 ```csharp
 var client = new AuthentaClient(new AuthentaOptions
 {
-    BaseUrl = "https://platform.authenta.ai",
+    BaseUrl = "<AUTHENTA_BASE_URL>",
     ClientId = "<CLIENT_ID>",
     ClientSecret = "<CLIENT_SECRET>"
 });
