@@ -25,8 +25,6 @@ namespace Authenta.SDK
         public async Task<T> PostAsync<T>(string url, object body)
         {
             var json = JsonConvert.SerializeObject(body);
-            Console.WriteLine(json);
-
             var content = new StringContent(json, Encoding.UTF8, "Application/json");
             var response = await _client.PostAsync(url, content);
 
