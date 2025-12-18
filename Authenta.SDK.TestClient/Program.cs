@@ -13,10 +13,14 @@ class Program
 
         var client = new __AuthentaClient(new AuthentaOptions
         {
-            BaseUrl = "https://dev.console.authenta.ai/",
-            ClientId = "6940fe0d723ef480cf78f546",
-            ClientSecret = "PywvtYiB7BGe1MCF8NVtBkj3Sd49AfDc",
+            BaseUrl = Environment.GetEnvironmentVariable("AUTHENTA_BASE_URL"),
+            ClientId = Environment.GetEnvironmentVariable("AUTHENTA_CLIENT_ID"),
+            ClientSecret = Environment.GetEnvironmentVariable("AUTHENTA_CLIENT_SECRET")
         });
+
+        if (string.IsNullOrEmpty(options.ClientId) || string.IsNullOrEmpty(options.ClientSecret)){
+            throw new InvalidOperationException("Authenta credentials are not configured.");
+        }
 
         var result = await client.UploadFileAsync(ex1, "AC-1");
 
