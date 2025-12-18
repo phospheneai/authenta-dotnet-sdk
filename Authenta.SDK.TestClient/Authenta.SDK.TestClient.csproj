@@ -8,7 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Authenta.SDK\Authenta.SDK.csproj" />
+    
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Authenta.SDK" Version="1.0.0" />
   </ItemGroup>
 
 </Project>
