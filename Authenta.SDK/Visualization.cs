@@ -29,12 +29,10 @@ namespace Authenta.SDK
         // -------------------------
 
         /// <summary>
-        /// Saves image heatmap as raw file (PNG/JPEG/etc) without decoding.
+        /// Saves image heatmap (PNG/JPEG/etc) as-is.
         /// Matches Python SDK behavior.
         /// </summary>
-         public static async Task<string> SaveHeatmapImageAsync(
-            IDictionary<string, object> media,
-            string outPath)
+        public static async Task<string> SaveHeatmapImageAsync(IDictionary<string, object> media,string outPath)
         {
             if (!media.ContainsKey("heatmapURL"))
                 throw new InvalidOperationException("No heatmapURL found in media");
@@ -51,14 +49,34 @@ namespace Authenta.SDK
 
             var bytes = await resp.Content.ReadAsByteArrayAsync();
             EnsureDir(outPath);
-
-            File.WriteAllBytes(outPath, bytes);   // ✅ netstandard2.0 safe
+            File.WriteAllBytes(outPath, bytes);   // netstandard2.0 safe
 
             return outPath;
         }
 
+        
+		
+		public static async Task<string> SaveHeatmapImageExAsync(MediaStatusResponse media,string outPath){
+			if (media == null){
+				throw new ArgumentNullException(nameof(media));
+			}
+			// Convert internally (no external adapter needed)
+			var dict = new Dictionary<string, object>();
 
-        /// <summary>
+			if (media.Heatmap is string heatmapUrl &&!string.IsNullOrWhiteSpace(heatmapUrl))
+			{
+				dict["heatmapURL"] = heatmapUrl;
+			}
+
+			if (dict.Count == 0){
+				throw new InvalidOperationException("No heatmap available for this media.");
+			}
+			// Delegate to existing implementation
+			return await SaveHeatmapImageAsync(dict, outPath);
+		}
+	
+		
+		/// <summary>
         /// Saves participant heatmap videos.
         /// </summary>
         public static async Task<List<string>> SaveHeatmapVideoAsync(
@@ -105,7 +123,7 @@ namespace Authenta.SDK
         }
 
         /// <summary>
-        /// Auto-detects media type and saves heatmap accordingly.
+        /// Auto-detects media type and saves heatmap.
         /// </summary>
         public static async Task<object> SaveHeatmapAsync(
             IDictionary<string, object> media,
@@ -135,7 +153,7 @@ namespace Authenta.SDK
         // Bounding box helpers
         // -------------------------
 
-         public static void DrawBoundingBoxes(
+        public static void DrawBoundingBoxes(
             string videoPath,
             Dictionary<int, List<BoundingBoxItem>> sequenceDict,
             string resultVideoPath)
@@ -158,8 +176,7 @@ namespace Authenta.SDK
                     fps,
                     new OpenCvSharp.Size(width, height)))
                 {
-                    var frameIndex = 0;
-
+                    int frameIndex = 0;
                     using (var frame = new Mat())
                     {
                         while (cap.Read(frame))
@@ -206,7 +223,6 @@ namespace Authenta.SDK
             }
         }
 
-
         // -------------------------
         // Authenta result adapter
         // -------------------------
@@ -225,7 +241,6 @@ namespace Authenta.SDK
             var detail = JObject.Parse(json);
 
             var bboxDict = detail["boundingBoxes"]?["0"]?["boundingBox"] as JObject;
-
             if (bboxDict == null)
                 throw new InvalidOperationException("Bounding box data missing");
 
@@ -261,6 +276,7 @@ namespace Authenta.SDK
             DrawBoundingBoxes(srcVideoPath, seq, outVideoPath);
             return outVideoPath;
         }
+		
+		
     }
-
 }
