@@ -22,7 +22,8 @@ class Program
             throw new InvalidOperationException("Authenta credentials are not configured.");
         }
         var client = new AuthentaClient(options);
-        var result = await client.UploadFileAsync(imagePath, "AC-1");
+         var result1 = await client.UploadProcessAndWaitAsync(ex1, "DF-1", TimeSpan.FromSeconds(2), TimeSpan.FromMinutes(3));
+
 
         Console.WriteLine($"Media ID: {result.Mid}");
     }
