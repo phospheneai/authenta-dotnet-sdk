@@ -63,7 +63,7 @@ namespace Authenta.SDK
 			// Convert internally (no external adapter needed)
 			var dict = new Dictionary<string, object>();
 
-			if (media.Heatmap is string heatmapUrl &&!string.IsNullOrWhiteSpace(heatmapUrl))
+			if (media.Heatmap is string heatmapUrl && !string.IsNullOrWhiteSpace(heatmapUrl))
 			{
 				dict["heatmapURL"] = heatmapUrl;
 			}
@@ -79,10 +79,7 @@ namespace Authenta.SDK
 		/// <summary>
         /// Saves participant heatmap videos.
         /// </summary>
-        public static async Task<List<string>> SaveHeatmapVideoAsync(
-            IDictionary<string, object> media,
-            string outDir,
-            string baseName = "heatmap")
+        public static async Task<List<string>> SaveHeatmapVideoAsync(IDictionary<string, object> media,string outDir,string baseName = "heatmap")
         {
             if (!media.ContainsKey("participants"))
                 throw new InvalidOperationException("No participants found in media");

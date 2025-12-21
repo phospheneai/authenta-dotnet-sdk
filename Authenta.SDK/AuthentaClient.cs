@@ -2,7 +2,9 @@
 using Authenta.SDK.Models;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -162,7 +164,20 @@ namespace Authenta.SDK
 
             return await WaitForMediaAsync(create.Mid,pollInterval,timeout);
         }
+        public async Task<MediaListResponse> ListMediaAsync(IDictionary<string, string> queryParams = null)
+        {
+            var url = "/api/media";
 
+            if (queryParams != null && queryParams.Count > 0)
+            {
+                var qs = string.Join("&",
+                    queryParams.Select(kv =>
+                        $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
+                url += "?" + qs;
+            }
+
+            return await _http.GetAsync<MediaListResponse>(url);
+        }
         private static string SanitizeName(string input)
         {
             if (string.IsNullOrWhiteSpace(input))

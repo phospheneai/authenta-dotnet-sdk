@@ -43,5 +43,13 @@ namespace Authenta.SDK
 
             return JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
         }
+
+
+        public async Task<string> GetRawAsync(string url)
+        {
+            var resp = await _client.GetAsync(url);
+            resp.EnsureSuccessStatusCode();
+            return await resp.Content.ReadAsStringAsync();
+        }
     }
 }
