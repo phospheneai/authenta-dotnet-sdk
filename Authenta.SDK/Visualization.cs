@@ -74,9 +74,53 @@ namespace Authenta.SDK
 			// Delegate to existing implementation
 			return await SaveHeatmapImageAsync(dict, outPath);
 		}
-	
-		
-		/// <summary>
+        /// <summary>
+        /// Downloads the heatmap image from the remote URL and returns the raw bytes.
+        /// Does NOT write to disk.
+        /// </summary>
+        public static async Task<byte[]> DownloadHeatmapImageAsync(IDictionary<string, object> media)
+        {
+            if (!media.TryGetValue("heatmapURL", out var urlObj) || string.IsNullOrEmpty(urlObj?.ToString()))
+                throw new InvalidOperationException("No heatmapURL found in media");
+
+            var url = urlObj.ToString();
+
+            var resp = await _http.GetAsync(url);
+            if ((int)resp.StatusCode == 404)
+                throw new InvalidOperationException("Heatmap not available (404). The presigned URL may have expired.");
+
+            resp.EnsureSuccessStatusCode();
+
+            return await resp.Content.ReadAsByteArrayAsync();
+        }
+        public static async Task<object> DownloadHeatmapAsync(
+            IDictionary<string, object> media,
+            string modelType = null)
+        {
+            bool isImage = false;
+
+            if (!string.IsNullOrEmpty(modelType))
+            {
+                var mt = modelType.ToUpperInvariant();
+                if (mt.StartsWith("AC-")) isImage = true;
+                else if (mt.StartsWith("DF-")) isImage = false;
+            }
+            else if (media.ContainsKey("heatmapURL"))
+            {
+                isImage = true;
+            }
+            else if (media.ContainsKey("type"))
+            {
+                isImage = media["type"]?.ToString()?.ToLowerInvariant() == "image";
+            }
+
+            if (isImage)
+                return await DownloadHeatmapImageAsync(media);
+
+            return await SaveHeatmapVideoAsync(media, outDir: null); // modify to return bytes/streams too if needed
+        }
+
+        /// <summary>
         /// Saves participant heatmap videos.
         /// </summary>
         public static async Task<List<string>> SaveHeatmapVideoAsync(IDictionary<string, object> media,string outDir,string baseName = "heatmap")
