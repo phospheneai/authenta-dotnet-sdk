@@ -106,6 +106,13 @@ Console.WriteLine($"Result   : {media.Result}");
 ### Async Upload & Polling
 For non-blocking workflows (e.g., web APIs or background services), use a two-step process:
 upload first, then poll for status using the Media ID (Mid).
+Example implementation can be found in
+.net standard framework 4.6.1
+[`Program.cs`](https://github.com/phospheneai/authenta-dotnet-sdk/blob/master/Authenta.SDK.Example3/Program.cs).
+
+.net core
+[`Program.cs`](https://github.com/phospheneai/authenta-dotnet-sdk/blob/master/Authenta.SDK.Example2/Program.cs).
+
 ```dotnet c#
 using Authenta.SDK;
 using Authenta.SDK.Models;
@@ -138,7 +145,8 @@ The SDK includes a `visualization` module to generate visual overlays (heatmaps 
 ### 3.2.1 Heatmaps (Images – AC‑1)
 
 Generate a visual heatmap indicating manipulated regions for an image.
-
+Example implementation can be found in
+[`Program.cs`](https://github.com/phospheneai/authenta-dotnet-sdk/blob/master/Authenta.SDK.heatmap/Program.cs).
 ```c#
   var client = new AuthentaClient(options);
         var media = await client.UploadProcessAndWaitAsync(
