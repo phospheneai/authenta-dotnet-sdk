@@ -137,7 +137,34 @@ if (finalMedia.Status == "PROCESSED")
 {
     Console.WriteLine($"Result: {finalMedia.Result}");
 }
+// 3. List Media
+var response = await client.ListMediaAsync(new Dictionary<string, object>
+{
+    { "limit", 20 },
+    { "offset", 0 }
+});
+
+Console.WriteLine($"Total  : {response.Total}");
+Console.WriteLine($"Limit  : {response.Limit}");
+Console.WriteLine($"Offset : {response.Offset}");
+
+foreach (var item in response.Items)
+{
+    Console.WriteLine($"[{item.ModelType}] {item.Name} - {item.Status}");
+}
+
+//4. Get Media Status
+var media = await client.GetMediaAsync("MEDIA_ID");
+
+Console.WriteLine($"Status : {media.Status}");
+Console.WriteLine($"Result : {media.Result}");
+
+//5. Delete Media
+await client.DeleteMediaAsync("MEDIA_ID");
+Console.WriteLine("Media deleted successfully.");
 ```
+
+Retrieve previously uploaded media with pagination support.
 
 ### Visualizing Results
 The SDK includes a `visualization` module to generate visual overlays (heatmaps and bounding boxes) to help you interpret detection results.
