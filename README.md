@@ -185,6 +185,9 @@ This downloads the `heatmapURL` from the API response and saves an RGB overlay i
 
 For DF‑1, the API can return multiple participants (faces) in a single video.
 Each participant may have a separate heatmap video.
+
+Example implementation can be found in
+[`Program.cs`](https://github.com/phospheneai/authenta-dotnet-sdk/blob/master/Authenta.SDK.heatmap/Program.cs).
 ```c#
 var videoPath = "data_samples\\val_00000044-dottest.mp4";
 
