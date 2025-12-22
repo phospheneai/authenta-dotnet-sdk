@@ -178,6 +178,14 @@ namespace Authenta.SDK
 
             return await _http.GetAsync<MediaListResponse>(url);
         }
+		public async Task DeleteMediaAsync(string mid)
+        {
+            if (string.IsNullOrWhiteSpace(mid))
+                throw new ArgumentException("mid cannot be empty", nameof(mid));
+
+            var url = $"/api/media/{mid}";
+            await _http.DeleteAsync(url);
+        }
         private static string SanitizeName(string input)
         {
             if (string.IsNullOrWhiteSpace(input))
