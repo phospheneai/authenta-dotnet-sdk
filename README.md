@@ -134,3 +134,80 @@ if (finalMedia.Status == "PROCESSED")
 
 ### Visualizing Results
 The SDK includes a `visualization` module to generate visual overlays (heatmaps and bounding boxes) to help you interpret detection results.
+
+### 3.2.1 Heatmaps (Images – AC‑1)
+
+Generate a visual heatmap indicating manipulated regions for an image.
+
+```c#
+  var client = new AuthentaClient(options);
+        var media = await client.UploadProcessAndWaitAsync(
+            imagePath,
+            modelType: "AC-1", // or "AC-1" for images
+            pollInterval: TimeSpan.FromSeconds(5),
+            timeout: TimeSpan.FromMinutes(5)
+        );
+
+        Console.WriteLine($"Done! Status: {media.Status}, Model: {media.ModelType}");
+
+        var outputDir = "output1";
+        Directory.CreateDirectory(outputDir);
+
+        var vizDict = MediaAdapters.ToVisualizationDict(media);
+
+        // Save heatmap (image or per-participant videos)
+        try
+        {
+            var result = Path.Combine(outputDir, "heatmap.jpg");
+
+            var heatmapResult = await Visualization.SaveHeatmapAsync(
+                vizDict,
+                result,
+                modelType: media.ModelType // "DF-1" or "AC-1"
+            );
+
+            if (heatmapResult is string imgPath)
+                Console.WriteLine($"Heatmap image saved: {imgPath}");
+            else if (heatmapResult is List<string> vidPaths)
+            {
+                Console.WriteLine($"Heatmap videos saved ({vidPaths.Count}):");
+                foreach (var p in vidPaths) Console.WriteLine($"  • {p}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"No heatmap available: {ex.Message}");
+        }
+```
+
+This downloads the `heatmapURL` from the API response and saves an RGB overlay image.
+### 3.2.2 Heatmaps (Deepfake Video – DF‑1, multi‑face)
+
+For DF‑1, the API can return multiple participants (faces) in a single video.
+Each participant may have a separate heatmap video.
+```c#
+var videoPath = "data_samples\\val_00000044-dottest.mp4";
+
+var client = new AuthentaClient(options);
+	var media = await client.UploadProcessAndWaitAsync(
+		videoPath,
+		modelType: "DF-1", // or "AC-1" for images
+		pollInterval: TimeSpan.FromSeconds(5),
+		timeout: TimeSpan.FromMinutes(5)
+	);
+  var vizDict = MediaAdapters.ToVisualizationDict(media);
+   var heatmapResult = await Visualization.SaveHeatmapAsync(
+                vizDict,
+                result,
+                modelType: media.ModelType // "DF-1" or "AC-1"
+            );
+
+            if (heatmapResult is string imgPath)
+                Console.WriteLine($"Heatmap image saved: {imgPath}");
+            else if (heatmapResult is List<string> vidPaths)
+            {
+                Console.WriteLine($"Heatmap videos saved ({vidPaths.Count}):");
+                foreach (var p in vidPaths) Console.WriteLine($"  • {p}");
+            } 
+	
+```

@@ -21,8 +21,8 @@ class Program
             return;
         }
 
-        var videoPath = "C:\\DG-client-project\\1\\authenta-dotnet-sdk\\data_samples\\val_00000044-dottest.mp4";
-        var imagePath = "C:\\DG-client-project\\1\\authenta-dotnet-sdk\\data_samples\\nano_img.png";
+        var videoPath = "data_samples\\val_00000044-dottest.mp4";
+        var imagePath = "data_samples\\nano_img.png";
 
         if (!File.Exists(imagePath))
         {
@@ -42,13 +42,12 @@ class Program
 
         Console.WriteLine($"Done! Status: {media.Status}, Model: {media.ModelType}");
 
-        var outputDir = "C:/DG-client-project/output1";
+        var outputDir = "output1";
         Directory.CreateDirectory(outputDir);
 
         var vizDict = MediaAdapters.ToVisualizationDict(media);
 
         // Save heatmap (image or per-participant videos)
-        /*
         try
         {
             var result = Path.Combine(outputDir, "heatmap.jpg");
@@ -70,28 +69,8 @@ class Program
         catch (Exception ex)
         {
             Console.WriteLine($"No heatmap available: {ex.Message}");
-        }*/
-        try
-        {
-            var heatmapResult = await Visualization.DownloadHeatmapAsync(vizDict, media.ModelType);
+        }
 
-            if (heatmapResult is byte[] imageBytes)
-            {
-                string imagePathOutput = Path.Combine(outputDir, "heatmap.png");
-                Directory.CreateDirectory(outputDir);
-                await File.WriteAllBytesAsync(imagePathOutput, imageBytes);
-                Console.WriteLine($"Heatmap image saved: {imagePathOutput}");
-            }
-            else if (heatmapResult is List<string> videoPaths)
-            {
-                Console.WriteLine($"Heatmap videos saved ({videoPaths.Count}):");
-                foreach (var p in videoPaths) Console.WriteLine($"  • {p}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to download heatmap: {ex.Message}");
-        }
         // Save bounding box video
         if (!string.IsNullOrEmpty(media.Result))
         {
