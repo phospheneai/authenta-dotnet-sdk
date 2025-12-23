@@ -20,10 +20,10 @@ class Program
             Console.WriteLine("Please set AUTHENTA_CLIENT_ID and AUTHENTA_CLIENT_SECRET environment variables.");
             return;
         }
+        var baseDir = AppContext.BaseDirectory;
+        var imagePath = Path.GetFullPath(Path.Combine(baseDir, "../../../..", "data_samples", "nano_img.png"));
 
-        var videoPath = "data_samples\\val_00000044-dottest.mp4";
-        var imagePath = "data_samples\\nano_img.png";
-
+     
         if (!File.Exists(imagePath))
         {
             Console.WriteLine($"Source video not found: {imagePath}");
@@ -32,7 +32,7 @@ class Program
 
         var client = new AuthentaClient(options);
 
-        Console.WriteLine("Uploading and processing with DF-1...");
+        Console.WriteLine("Uploading and processing with AC-1...");
         var media = await client.UploadProcessAndWaitAsync(
             imagePath,
             modelType: "AC-1", // or "AC-1" for images
@@ -40,52 +40,8 @@ class Program
             timeout: TimeSpan.FromMinutes(5)
         );
 
-        Console.WriteLine($"Done! Status: {media.Status}, Model: {media.ModelType}");
+        await Visualization.SaveHeatmapImageAsync(media, "results/image_heatmap.jpg");
 
-        var outputDir = "output1";
-        Directory.CreateDirectory(outputDir);
 
-        var vizDict = MediaAdapters.ToVisualizationDict(media);
-
-        // Save heatmap (image or per-participant videos)
-        try
-        {
-            var result = Path.Combine(outputDir, "heatmap.jpg");
-
-            var heatmapResult = await Visualization.SaveHeatmapAsync(
-                vizDict,
-                result,
-                modelType: media.ModelType // "DF-1" or "AC-1"
-            );
-
-            if (heatmapResult is string imgPath)
-                Console.WriteLine($"Heatmap image saved: {imgPath}");
-            else if (heatmapResult is List<string> vidPaths)
-            {
-                Console.WriteLine($"Heatmap videos saved ({vidPaths.Count}):");
-                foreach (var p in vidPaths) Console.WriteLine($"  • {p}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"No heatmap available: {ex.Message}");
-        }
-
-        // Save bounding box video
-        if (!string.IsNullOrEmpty(media.Result))
-        {
-            try
-            {
-                var bboxVideo = Path.Combine(outputDir, "result_with_boxes.mp4");
-                await Visualization.SaveBoundingBoxVideoAsync(vizDict, videoPath, bboxVideo);
-                Console.WriteLine($"Bounding box video saved: {bboxVideo}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Bounding box failed: {ex.Message}");
-            }
-        }
-
-        Console.WriteLine("All done! Check the 'output' folder.");
     }
 }
