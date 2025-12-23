@@ -117,7 +117,10 @@ Example implementation can be found in
 using Authenta.SDK;
 using Authenta.SDK.Models;
 
+
+<span style="color:red">
 // 1. Initiate upload
+</span>
 MediaStatusResponse uploadMeta =
     await client.UploadAsync(
         "samples/video.mp4",
@@ -129,7 +132,10 @@ Console.WriteLine($"Upload started. Media ID: {mid}");
 
 // ... perform other work ...
 
+
+<span style="color:red">
 // 2. Poll for final status
+</span>
 MediaStatusResponse finalMedia =
     await client.WaitForMediaAsync(mid);
 
@@ -137,7 +143,10 @@ if (finalMedia.Status == "PROCESSED")
 {
     Console.WriteLine($"Result: {finalMedia.Result}");
 }
+
+<span style="color:red">
 // 3. List Media
+</span>
 var response = await client.ListMediaAsync(new Dictionary<string, object>
 {
     { "limit", 20 },
@@ -152,16 +161,21 @@ foreach (var item in response.Items)
 {
     Console.WriteLine($"[{item.ModelType}] {item.Name} - {item.Status}");
 }
-
+<span style="color:red">
 //4. Get Media Status
-var media = await client.GetMediaAsync("MEDIA_ID");
+</span>
+var media = await client.GetMediaAsync(mediId);
 
 Console.WriteLine($"Status : {media.Status}");
 Console.WriteLine($"Result : {media.Result}");
 
-//5. Delete Media
-await client.DeleteMediaAsync("MEDIA_ID");
+ <span style="color:red">
+//5. delete Media
+</span>
+ 
+await client.DeleteMediaAsync(mediId);
 Console.WriteLine("Media deleted successfully.");
+ 
 ```
 
 Retrieve previously uploaded media with pagination support.
