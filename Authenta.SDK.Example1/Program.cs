@@ -21,8 +21,8 @@ class Program
             return;
         }
 
-        var videoPath = "C:\\DG-client-project\\1\\authenta-dotnet-sdk\\data_samples\\val_00000044-dottest.mp4";
-        var imagePath = "C:\\DG-client-project\\1\\authenta-dotnet-sdk\\data_samples\\nano_img.png";
+        var videoPath = "data_samples\\val_00000044-dottest.mp4"; //adjust the path.
+        var imagePath = "data_samples\\nano_img.png"; //adjust the path.
 
         if (!File.Exists(imagePath))
         {
@@ -47,30 +47,7 @@ class Program
 
         var vizDict = MediaAdapters.ToVisualizationDict(media);
 
-        // Save heatmap (image or per-participant videos)
-        /*
-        try
-        {
-            var result = Path.Combine(outputDir, "heatmap.jpg");
-
-            var heatmapResult = await Visualization.SaveHeatmapAsync(
-                vizDict,
-                result,
-                modelType: media.ModelType // "DF-1" or "AC-1"
-            );
-
-            if (heatmapResult is string imgPath)
-                Console.WriteLine($"Heatmap image saved: {imgPath}");
-            else if (heatmapResult is List<string> vidPaths)
-            {
-                Console.WriteLine($"Heatmap videos saved ({vidPaths.Count}):");
-                foreach (var p in vidPaths) Console.WriteLine($"  • {p}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"No heatmap available: {ex.Message}");
-        }*/
+         
         try
         {
             var heatmapResult = await Visualization.DownloadHeatmapAsync(vizDict, media.ModelType);
