@@ -192,6 +192,21 @@ Retrieve previously uploaded media with pagination support.
 ### Visualizing Results
 The SDK includes a `visualization` module to generate visual overlays (heatmaps and bounding boxes) to help you interpret detection results.
 
+## Visualization Features
+
+It supports both **image models (AC-*)** and **video models (DF-*)**, including heatmaps and bounding box overlays.
+
+### Key Methods
+
+| Method                          | Purpose                                      | Model Type |
+|---------------------------------|----------------------------------------------|------------|
+| `SaveHeatmapImageAsync`         | Save single heatmap image                    | AC-1       |
+| `SaveHeatmapVideosAsync`        | Save per-participant heatmap videos          | DF-1       |
+| `SaveHeatmapAsync`              | Unified: auto-detects and saves correct type | AC-1 / DF-1|
+| `SaveBoundingBoxVideoAsync`     | Create video with bounding boxes overlaid    | DF-1       |
+| `SaveImageArtefactsAsync`       | Save all artefacts for images                | AC-1       |
+| `SaveVideoArtefactsAsync`       | Save all artefacts for videos (recommended)  | DF-1       |
+
 ### 3.2.1 Heatmaps (Images – AC‑1)
 
 Generate a visual heatmap indicating manipulated regions for an image.
@@ -354,210 +369,201 @@ class Program
 
 ### 3 list media
 ```
-using Authenta.SDK.Exceptions;
+ using System;
+using System.IO;
+using System.Threading.Tasks;
+using Authenta.SDK;
 using Authenta.SDK.Models;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
+ 
 
-namespace Authenta.SDK
+class Program
 {
-    public class AuthentaClient
+    static async Task Main()
     {
-        private readonly AuthentaHttpClient _http;
-
-        public AuthentaClient(AuthentaOptions options)
+        var options = new AuthentaOptions
         {
-            _http = new AuthentaHttpClient(options);
+            BaseUrl = Environment.GetEnvironmentVariable("AUTHENTA_BASE_URL"),
+            ClientId = Environment.GetEnvironmentVariable("AUTHENTA_CLIENT_ID"),
+            ClientSecret = Environment.GetEnvironmentVariable("AUTHENTA_CLIENT_SECRET"),
+        };
+
+        if (string.IsNullOrEmpty(options.ClientId) ||string.IsNullOrEmpty(options.ClientSecret))
+        {
+            throw new InvalidOperationException("Authenta credentials are not configured.");
         }
-        public async Task<MediaCreateResponse> CreateMediaAsync(MediaCreateRequest body)
-        {
-           // var json = JsonConvert.SerializeObject(body);
-           // var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _http.PostAsync<MediaCreateResponse>("/api/media", body);
-            return response;
+         
+        var client = new AuthentaClient(options);
+
+        var resp = await client.ListMediaAsync();
+
+        Console.WriteLine($"Total  : {resp.Total}");
+        Console.WriteLine($"Limit  : {resp.Limit}");
+        Console.WriteLine($"Offset : {resp.Offset}");
+        Console.WriteLine();
+
+        if (resp.Data == null || resp.Data.Count == 0)
+        {
+            Console.WriteLine("No media found.");
+            return;
         }
-        public async Task<MediaCreateResponse> UploadFileAsync(string filePath,string modelType)
+
+        foreach (var m in resp.Data)
         {
-            if (!File.Exists(filePath))
-                throw new AuthentaException("File not found");
+            Console.WriteLine("-----");
+            Console.WriteLine($"MID       : {m.Mid}");
+            Console.WriteLine($"Name      : {m.Name}");
+            Console.WriteLine($"Type      : {m.Type}");
+            Console.WriteLine($"Model     : {m.ModelType}");
+            Console.WriteLine($"Status    : {m.Status}");
+            Console.WriteLine($"CreatedAt : {m.CreatedAt}");
 
-            var fileInfo = new FileInfo(filePath);
-
-            if (fileInfo.Length <= 0)
-                throw new AuthentaException("File size must be greater than zero");
-
-            if (modelType != "DF-1" && modelType != "AC-1" && modelType != "FD-1")
+            if (m.Type == "Image")
             {
-                throw new AuthentaException("modelType must be one of: DF-1, AC-1, FD-1");
+                Console.WriteLine($"Fake      : {m.Fake}");
+                Console.WriteLine($"Confidence: {m.Confidence}");
             }
 
-            var mimeType = MimeTypeHelper.GetMimeType(filePath);
-
-            var createRequest = new MediaCreateRequest
+            if (m.Type == "Video")
             {
-                name = SanitizeName( Path.GetFileNameWithoutExtension(fileInfo.Name)),
-                contentType = mimeType,
-                size = fileInfo.Length,
-                modelType = modelType
-            };
-
-
-             
-
-            // Step 1: create media (JSON)
-            var meta = await _http.PostAsync<MediaCreateResponse>("/api/media", createRequest);
-
-            if (string.IsNullOrEmpty(meta.UploadUrl))
-                throw new AuthentaException("UploadUrl missing in API response");
-
-            // Step 2: upload raw binary (NOT JSON)
-            using (var fs = File.OpenRead(filePath))
-            using (var content = new StreamContent(fs))
-            {
-                content.Headers.ContentType =new MediaTypeHeaderValue(mimeType);
-
-                using (var client = new HttpClient())
-                {
-                    var putResp = await client.PutAsync(meta.UploadUrl,content);
-
-                    if (!putResp.IsSuccessStatusCode)
-                    {
-                        throw new AuthentaApiException("Binary upload failed",(int)putResp.StatusCode);
-                    }
-                }
+                Console.WriteLine($"Faces     : {m.Faces}");
+                Console.WriteLine($"DeepFakes : {m.DeepFakes}");
             }
-
-            return meta;
-        }
-        public async Task ProcessMediaAsync(string mid)
-        {
-            await _http.PostAsync<object>($"/api/media/{mid}/process", body: null);
-        }
-
-        public async Task<MediaStatusResponse> WaitForMediaAsync(string mid,TimeSpan? interval = null,TimeSpan? timeout = null)
-        {
-            if (string.IsNullOrWhiteSpace(mid))
-                throw new ArgumentException("mid is required", nameof(mid));
-
-            if (!interval.HasValue)
-            {
-                interval = TimeSpan.FromSeconds(5);
-            }
-
-            if (!timeout.HasValue)
-            {
-                timeout = TimeSpan.FromMinutes(5);
-            }
-
-            var start = DateTime.UtcNow;
-
-            while (true)
-            {
-                var media = await GetMediaAsync(mid);
-                var status = (media.Status ?? string.Empty).ToUpperInvariant();
-
-                if (status == "PROCESSED" ||status == "FAILED" || status == "ERROR")
-                {
-                    return media;
-                }
-
-                if (DateTime.UtcNow - start > timeout)
-                {
-                    throw new TimeoutException($"Timed out waiting for media {mid}, last status={status}");
-                }
-
-                await Task.Delay(interval.Value);
-            }
-        }
-        public async Task<MediaStatusResponse> GetMediaAsync(string mid)
-        {
-            if (string.IsNullOrWhiteSpace(mid))
-                throw new ArgumentException("mid is required", nameof(mid));
-
-            return await _http.GetAsync<MediaStatusResponse>( $"/api/media/{mid}");
-        }
-
-        public async Task<MediaStatusResponse> UploadProcessAndWaitAsync(string filePath,string modelType,TimeSpan? pollInterval = null,TimeSpan? timeout = null)
-        {
-            var fileInfo = new FileInfo(filePath);
-            var mimeType = MimeTypeHelper.GetMimeType(filePath);
-
-            var create = await CreateMediaAsync(new MediaCreateRequest
-            {
-                name = Path.GetFileNameWithoutExtension(filePath),
-                contentType = mimeType,
-                size = fileInfo.Length,
-                modelType = modelType
-            });
-
-
-            // Step 2: upload raw binary (NOT JSON)
-            using (var fs = File.OpenRead(filePath))
-            using (var content = new StreamContent(fs))
-            {
-                content.Headers.ContentType = new MediaTypeHeaderValue(mimeType);
-
-                using (var client = new HttpClient())
-                {
-                    var putResp = await client.PutAsync(create.UploadUrl, content);
-
-                    if (!putResp.IsSuccessStatusCode)
-                    {
-                        throw new AuthentaApiException("Binary upload failed", (int)putResp.StatusCode);
-                    }
-                }
-            }
-            //await ProcessMediaAsync(create.Mid);
-
-            return await WaitForMediaAsync(create.Mid,pollInterval,timeout);
-        }
-        public async Task<MediaListResponse> ListMediaAsync(IDictionary<string, string> queryParams = null)
-        {
-            var url = "/api/media";
-
-            if (queryParams != null && queryParams.Count > 0)
-            {
-                var qs = string.Join("&",
-                    queryParams.Select(kv =>
-                        $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
-                url += "?" + qs;
-            }
-
-            return await _http.GetAsync<MediaListResponse>(url);
-        }
-		public async Task DeleteMediaAsync(string mid)
-        {
-            if (string.IsNullOrWhiteSpace(mid))
-                throw new ArgumentException("mid cannot be empty", nameof(mid));
-
-            var url = $"/api/media/{mid}";
-            await _http.DeleteAsync(url);
-        }
-        private static string SanitizeName(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input))
-                return "media";
-
-            var clean = Regex.Replace(
-                input,
-                @"[^a-zA-Z0-9 _-]",
-                ""
-            );
-
-            return clean.Length > 24
-                ? clean.Substring(0, 24)
-                : clean;
         }
     }
 }
 
+
+```
+### 4. Save Heatmap
+```
+using Authenta.SDK;
+using Authenta.SDK.Models;
+using OpenCvSharp.Text;
+using System;
+using System.IO;
+using System.Threading;
+
+public class Program
+{
+    public static async Task Main(string[] args)
+    {
+        var options = new AuthentaOptions
+        {
+            BaseUrl = Environment.GetEnvironmentVariable("AUTHENTA_BASE_URL"),
+            ClientId = Environment.GetEnvironmentVariable("AUTHENTA_CLIENT_ID"),
+            ClientSecret = Environment.GetEnvironmentVariable("AUTHENTA_CLIENT_SECRET"),
+        };
+        var baseDir = AppContext.BaseDirectory;
+        var videoPath = Path.GetFullPath(Path.Combine(baseDir, "../../../..", "data_samples", "val_00000044.mp4"));
+        if (!File.Exists(videoPath))
+        {
+            Console.WriteLine($"Error: File not found: {videoPath}");
+            return;
+        }
+
+        Console.WriteLine("Uploading and processing video (DF-1)... This may take several minutes.");
+
+        try
+        {
+            var client = new AuthentaClient(options);
+
+            MediaStatusResponse media = await client.UploadProcessAndWaitAsync(
+                filePath: videoPath,
+                modelType: "DF-1",                    // Use "AC-1" only for images
+                pollInterval: TimeSpan.FromSeconds(5),
+                timeout: TimeSpan.FromMinutes(15)     // Videos can take 10+ minutes depending on length
+            );
+
+            string outputRoot = Path.Combine(AppContext.BaseDirectory, "results");
+            string caseDir = Path.Combine(outputRoot, media.Mid ?? "unknown");
+
+            if (media.ModelType.StartsWith("AC-"))
+            {
+                await Visualization.SaveImageArtefactsAsync(media, caseDir, "face");
+            }
+            else // DF-*
+            {
+                await Visualization.SaveVideoArtefactsAsync(media, videoPath, caseDir, "scene");
+            }
+
+            Console.WriteLine("All visualization artefacts saved successfully!");
+
+        }
+        catch (TimeoutException)
+        {
+            Console.WriteLine("Processing timed out. Try increasing the timeout for longer videos.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+}
+```
+
+### 5 Save Bounding Box Video
+```
+using Authenta.SDK;
+using Authenta.SDK.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+public class Program
+{
+    public static async Task Main(string[] args)
+    {
+        var baseDir = AppContext.BaseDirectory;
+        var videoPath = Path.GetFullPath(Path.Combine(baseDir, "../../../..", "data_samples", "val_00000044.mp4"));
+
+        string outputDir = Path.Combine(AppContext.BaseDirectory, "output");
+        Directory.CreateDirectory(outputDir);
+        string bboxVideoPath = Path.Combine(outputDir, "annotated_with_boxes.mp4");
+
+        if (!File.Exists(videoPath))
+        {
+            Console.WriteLine($"Error: File not found: {videoPath}");
+            return;
+        }
+        try
+        {
+            var options = new AuthentaOptions
+            {
+                BaseUrl = Environment.GetEnvironmentVariable("AUTHENTA_BASE_URL"),
+                ClientId = Environment.GetEnvironmentVariable("AUTHENTA_CLIENT_ID"),
+                ClientSecret = Environment.GetEnvironmentVariable("AUTHENTA_CLIENT_SECRET"),
+            };
+           
+            var client = new AuthentaClient(options);
+
+            // Step 1: Upload + Process → This is REQUIRED
+            MediaStatusResponse media = await client.UploadProcessAndWaitAsync(
+                filePath: videoPath,
+                modelType: "DF-1",                 // or "AC-1" for images (but bounding boxes are usually DF-1)
+                pollInterval: TimeSpan.FromSeconds(5),
+                timeout: TimeSpan.FromMinutes(10)
+            );
+
+            Console.WriteLine($"Processing complete. Status: {media.Status}");
+            Console.WriteLine($"Result URL available: {!string.IsNullOrEmpty(media.Result)}");
+            string savedPath = await Visualization.SaveBoundingBoxVideoAsync(
+                media: media,
+                srcVideoPath: videoPath,
+                outVideoPath: bboxVideoPath
+            );
+
+            Console.WriteLine($"Bounding box video saved: {savedPath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"No bounding boxes available: {ex.Message}");
+        }
+
+    }
+}
+ 
 ```
