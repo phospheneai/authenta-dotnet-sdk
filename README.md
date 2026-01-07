@@ -10,7 +10,7 @@ Welcome to the official documentation for the **Authenta dotnet SDK**. This libr
 - .NET 6+
 - .NET SDK 6.0 or later (for development & tooling)
 - Library target: **.NET Standard 2.0**
-- Supported OS: Windows, Linux, macOS
+- Supported OS: Windows
 
 ---
 ## Features
@@ -190,11 +190,11 @@ Console.WriteLine("Media deleted successfully.");
 Retrieve previously uploaded media with pagination support.
 
 ### Visualizing Results
-The SDK includes a `visualization` module to generate visual overlays (heatmaps and bounding boxes) to help you interpret detection results.
+The SDK includes a `visualization` module to generate visual overlays (bounding boxes) to help you interpret detection results.
 
 ## Visualization Features
 
-It supports both **image models (AC-*)** and **video models (DF-*)**, including heatmaps and bounding box overlays.
+It supports both **image models (AC-*)** and **video models (DF-*)**, including bounding box overlays.
 
 ### Key Methods
 
